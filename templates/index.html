@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyTrack | Student Task Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="site-header">
+    <div class="header-inner">
+        <a class="brand" href="{{ url_for('home') }}"><span class="brand-mark">S</span> StudyTrack</a>
+        <span class="header-note">Your study day, organized.</span>
+    </div>
+</header>
+
+<main class="container">
+    <section class="welcome">
+        <div>
+            <p class="eyebrow">STUDENT PRODUCTIVITY</p>
+            <h1>Plan your work.<br><span>Reach your goals.</span></h1>
+            <p class="welcome-copy">Keep assignments, subjects, due dates, and priorities in one simple place.</p>
+        </div>
+        <div class="welcome-icon" aria-hidden="true">✓</div>
+    </section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-list">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="stats-grid" aria-label="Task statistics">
+        <div class="stat-card">
+            <span class="stat-icon purple">▤</span>
+            <p>Total Tasks</p>
+            <span class="stat-number">{{ total_tasks }}</span>
+            <p class="stat-foot">All your study tasks</p>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon amber">◷</span>
+            <p>Pending</p>
+            <span class="stat-number">{{ pending_tasks }}</span>
+            <p class="stat-foot">Still to do</p>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon green">✓</span>
+            <p>Completed</p>
+            <span class="stat-number">{{ completed_tasks }}</span>
+            <p class="stat-foot">Tasks finished</p>
+        </div>
+        <div class="stat-card">
+            <span class="stat-icon red">!</span>
+            <p>Overdue</p>
+            <span class="stat-number">{{ overdue_tasks }}</span>
+            <p class="stat-foot">Past due date and pending</p>
+        </div>
+    </section>
+
+    <section class="progress-card">
+        <div class="progress-heading">
+            <div>
+                <h2>Study Progress</h2>
+                <p>{{ completed_tasks }} of {{ total_tasks }} tasks completed</p>
+            </div>
+            <strong>{{ progress }}%</strong>
+        </div>
+        <div class="progress-track" role="progressbar" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100" aria-label="Task completion progress">
+    <div class="progress-fill" data-progress="{{ progress }}"></div>
+        </div>
+    </section>
+
+    <div class="main-grid">
+        <section class="panel add-panel">
+            <div class="section-heading">
+                <div><p class="eyebrow">GET IT ON YOUR LIST</p><h2>Add a New Task</h2></div>
+                <span class="heading-icon">＋</span>
+            </div>
+            <form action="{{ url_for('add_task') }}" method="POST" class="task-form">
+                <div class="field">
+                    <label for="title">Task title <span>*</span></label>
+                    <input id="title" name="title" type="text" placeholder="e.g. Complete DSA assignment" maxlength="160" required>
+                </div>
+                <div class="field">
+                    <label for="subject">Subject <span>*</span></label>
+                    <input id="subject" name="subject" type="text" placeholder="e.g. Data Structures" maxlength="100" required>
+                </div>
+                <div class="form-row">
+                    <div class="field">
+                        <label for="due_date">Due date</label>
+                        <input id="due_date" name="due_date" type="date" min="{{ today }}">
+                    </div>
+                    <div class="field">
+                        <label for="priority">Priority</label>
+                        <select id="priority" name="priority">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="primary-btn full-btn" type="submit">＋ Add Task</button>
+            </form>
+        </section>
+
+        <section class="panel tasks-panel">
+            <div class="section-heading task-heading">
+                <div><p class="eyebrow">YOUR WORKSPACE</p><h2>Task List</h2></div>
+                <span class="task-total" id="task-count">Showing {{ total_tasks }} tasks</span>
+            </div>
+
+            <div class="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input type="search" id="taskSearch" placeholder="Search by title or subject..." aria-label="Search tasks">
+            </div>
+
+            <div class="task-filters" aria-label="Filter tasks">
+                <button type="button" class="filter-btn active" data-filter="all">All Tasks</button>
+                <button type="button" class="filter-btn" data-filter="pending">Pending</button>
+                <button type="button" class="filter-btn" data-filter="completed">Completed</button>
+            </div>
+            <div class="task-filters priority-filters" aria-label="Filter by priority">
+                <span class="filter-label">Priority:</span>
+                <button type="button" class="filter-btn" data-filter="high">High</button>
+                <button type="button" class="filter-btn" data-filter="medium">Medium</button>
+                <button type="button" class="filter-btn" data-filter="low">Low</button>
+            </div>
+
+            <div id="task-list" class="task-list">
+                {% for task in tasks %}
+                <article class="task-item {% if task['completed'] %}is-completed{% endif %}"
+                         data-priority="{{ task['priority']|lower }}">
+                    <div class="task-top">
+                        <div class="task-title-wrap">
+                            <h3>{{ task['title'] }}</h3>
+                            <p class="task-subject">{{ task['subject'] }}</p>
+                        </div>
+                        <span class="priority priority-{{ task['priority']|lower }}">{{ task['priority'] }}</span>
+                    </div>
+                    <div class="task-meta">
+                        {% if task['due_date'] %}
+                            <span class="due-label {% if task|overdue %}overdue-label{% endif %}">
+                                {% if task|overdue %}⚠ Overdue · {% else %}Due · {% endif %}{{ task['due_date'] }}
+                            </span>
+                        {% else %}
+                            <span class="due-label">No due date</span>
+                        {% endif %}
+                        <span class="status-label {% if task['completed'] %}status-done{% else %}status-pending{% endif %}">
+                            {% if task['completed'] %}Completed{% else %}Pending{% endif %}
+                        </span>
+                    </div>
+                    <div class="task-actions">
+                        <form action="{{ url_for('toggle_task', task_id=task['id']) }}" method="POST">
+                            <button type="submit" class="small-btn complete-btn">
+                                {% if task['completed'] %}Mark Pending{% else %}Mark Complete{% endif %}
+                            </button>
+                        </form>
+                        <a class="small-btn edit-btn" href="{{ url_for('edit_task', task_id=task['id']) }}">Edit</a>
+                        <form action="{{ url_for('delete_task', task_id=task['id']) }}" method="POST" onsubmit="return confirm('Delete this task? This cannot be undone.');">
+                            <button type="submit" class="small-btn delete-btn">Delete</button>
+                        </form>
+                    </div>
+                </article>
+                {% else %}
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-icon">✓</div>
+                    <h3>No tasks yet</h3>
+                    <p>Add your first task using the form to get started.</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% if tasks %}
+            <div class="empty-state" id="empty-state" style="display:none">
+                <div class="empty-icon">⌕</div>
+                <h3>No matching tasks</h3>
+                <p>Try a different search or filter.</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+    <footer class="site-footer">StudyTrack · Small steps make progress.</footer>
+</main>
+
+<script>
+(() => {
+    const searchInput = document.getElementById("taskSearch");
+    const taskItems = Array.from(document.querySelectorAll(".task-item"));
+    const filterButtons = Array.from(document.querySelectorAll(".filter-btn"));
+    const taskCount = document.getElementById("task-count");
+    const emptyState = document.getElementById("empty-state");
+    let currentFilter = "all";
+
+    function applyFilters() {
+        const query = (searchInput?.value || "").trim().toLowerCase();
+        let visibleCount = 0;
+
+        taskItems.forEach((task) => {
+            const isCompleted = task.classList.contains("is-completed");
+            const priority = task.dataset.priority;
+            let statusMatch = true;
+
+            if (currentFilter === "pending") statusMatch = !isCompleted;
+            else if (currentFilter === "completed") statusMatch = isCompleted;
+            else if (["high", "medium", "low"].includes(currentFilter)) {
+                statusMatch = priority === currentFilter;
+            }
+
+            const textMatch = task.textContent.toLowerCase().includes(query);
+            const show = statusMatch && textMatch;
+            task.hidden = !show;
+            if (show) visibleCount++;
+        });
+
+        if (taskCount) {
+            taskCount.textContent = `Showing ${visibleCount} ${visibleCount === 1 ? "task" : "tasks"}`;
+        }
+        if (emptyState) {
+            emptyState.style.display = visibleCount === 0 ? "" : "none";
+            const heading = emptyState.querySelector("h3");
+            const message = emptyState.querySelector("p");
+            if (heading) heading.textContent = taskItems.length === 0 ? "No tasks yet" : "No matching tasks";
+            if (message) message.textContent = taskItems.length === 0
+                ? "Add your first task using the form to get started."
+                : "Try a different search or filter.";
+        }
+    }
+
+    filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            currentFilter = button.dataset.filter;
+            filterButtons.forEach((item) => item.classList.toggle("active", item === button));
+            applyFilters();
+        });
+    });
+
+    searchInput?.addEventListener("input", applyFilters);
+    applyFilters();
+})();
+</script>
+</body>
+</html>

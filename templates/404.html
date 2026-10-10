@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Not Found | StudyTrack</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main class="container edit-container">
+    <section class="panel edit-panel">
+        <p class="eyebrow">404 ERROR</p>
+        <h1>Task not found</h1>
+        <p class="muted">This task may have been deleted or the link is incorrect.</p>
+        <a class="primary-btn button-link" href="{{ url_for('home') }}">Return to dashboard</a>
+    </section>
+</main>
+</body>
+</html>

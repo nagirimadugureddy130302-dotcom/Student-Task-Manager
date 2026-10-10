@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Task | StudyTrack</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="site-header">
+    <div class="header-inner">
+        <a class="brand" href="{{ url_for('home') }}"><span class="brand-mark">S</span> StudyTrack</a>
+        <a class="back-link" href="{{ url_for('home') }}">← Back to dashboard</a>
+    </div>
+</header>
+<main class="container edit-container">
+    <section class="panel edit-panel">
+        <p class="eyebrow">UPDATE YOUR WORKSPACE</p>
+        <h1>Edit Task</h1>
+        <p class="muted">Make changes to the task details below.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form action="{{ url_for('edit_task', task_id=task['id']) }}" method="POST" class="task-form">
+            <div class="field">
+                <label for="title">Task title <span>*</span></label>
+                <input id="title" name="title" type="text" value="{{ task['title'] }}" maxlength="160" required>
+            </div>
+            <div class="field">
+                <label for="subject">Subject <span>*</span></label>
+                <input id="subject" name="subject" type="text" value="{{ task['subject'] }}" maxlength="100" required>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label for="due_date">Due date</label>
+                    <input id="due_date" name="due_date" type="date" value="{{ task['due_date'] or '' }}">
+                </div>
+                <div class="field">
+                    <label for="priority">Priority</label>
+                    <select id="priority" name="priority" required>
+                        <option value="Low" {% if task['priority'] == 'Low' %}selected{% endif %}>Low</option>
+                        <option value="Medium" {% if task['priority'] == 'Medium' %}selected{% endif %}>Medium</option>
+                        <option value="High" {% if task['priority'] == 'High' %}selected{% endif %}>High</option>
+                    </select>
+                </div>
+            </div>
+            <div class="edit-form-actions">
+                <button type="submit" class="primary-btn">Save Changes</button>
+                <a href="{{ url_for('home') }}" class="secondary-btn">Cancel</a>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>
